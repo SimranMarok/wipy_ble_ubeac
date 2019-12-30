@@ -9,10 +9,14 @@ pycom.heartbeat(False)
 wlan = WLAN(mode=WLAN.STA)
 bluetooth = Bluetooth()
 
+#Change accordingly
 url = 'http://***.hub.ubeac.io/mygateway'
+#****************************************
 
+#Change accordingly
 wifi_ssid = "abc123"
 wifi_pass = "12345678"
+#*********************
 
 my_beacons = []
 
@@ -40,11 +44,16 @@ while 1:
         if(mfg_data is not None) and (mfg_data not in my_beacons):
             pycom.rgbled(0x0000ff)
 
+            mfg_data = str(ubinascii.hexlify(mfg_data))
+            mfg_data = mfg_data.replace('b\'', '').replace('\'','')
             my_beacons.append(mfg_data)
-            print(ubinascii.hexlify(mfg_data))
+
+            print(mfg_data)
+
+            my_data = {"Data" : str(my_beacons)}
 
             if(connected is True):
-                res = urequests.post(url, data=str(my_beacons))
+                res = urequests.post(url, data=str(my_data))
                 res.close()
             
             pycom.rgbled(0x000000)
