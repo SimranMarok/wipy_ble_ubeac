@@ -1,5 +1,6 @@
 import pycom
 from network import WLAN, Bluetooth
+from BLE_Decoder import BLEAdvReader
 import urequests
 import machine
 import ubinascii
@@ -35,26 +36,55 @@ for net in nets:
 
 bluetooth.start_scan(-1)
 
-# wait
-while 1:
-    adv = bluetooth.get_adv()
-    if adv:
-        mfg_data = bluetooth.resolve_adv_data(adv.data, Bluetooth.ADV_MANUFACTURER_DATA)
+def hex(data) :
+    if data :
+        return hexlify(data).decode().upper()
+    return ''
 
-        if(mfg_data is not None) and (mfg_data not in my_beacons):
-            pycom.rgbled(0x0000ff)
+def mac2str(mac) :
+    if mac :
+        return ubinascii.hexlify(mac, ':').decode().upper()
+    return ''
 
-            mfg_data = str(ubinascii.hexlify(mfg_data))
-            mfg_data = mfg_data.replace('b\'', '').replace('\'','')
-            my_beacons.append(mfg_data)
 
-            print(mfg_data)
+def ble_scanner_decoder():
+    while True :
+        adv = bluetooth.get_adv()
+        if adv :
+            mac = mac2str(adv.mac)
+            print()
+            print()
+            print('  - MAC ADDRESS  : %s' % mac)
+            print('  - RSSI         : %s' % adv.rssi)
+            try :
+                r = BLEAdvReader(adv.data)
+                for advObj in r.GetAllElements() :
+                    print('  - OBJECT       : [%s] %s' % (type(advObj), advObj))
+            except :
+                pass
 
-            my_data = {"Data" : str(my_beacons)}
+def mac_sender_ubeac():
+    while 1:
+        adv = bluetooth.get_adv()
+        if adv:
+            #mfg_data = bluetooth.resolve_adv_data(adv.data, Bluetooth.ADV_MANUFACTURER_DATA)
+            mfg_data = mac2str(adv.mac)
 
-            if(connected is True):
-                res = urequests.post(url, data=str(my_data))
-                res.close()
-            
-            pycom.rgbled(0x000000)
-        
+            if(mfg_data is not None) and (mfg_data not in my_beacons):
+                pycom.rgbled(0x0000ff)
+
+                #mfg_data = str(ubinascii.hexlify(mfg_data))
+                #mfg_data = mfg_data.replace('b\'', '').replace('\'','')
+                
+                my_beacons.append(mfg_data)
+                print(mfg_data)
+                my_data = {"Data" : str(my_beacons)}
+
+                if(connected is True):
+                    res = urequests.post(url, data=str(my_data))
+                    res.close()
+                
+                pycom.rgbled(0x000000)
+
+#ble_scanner_decoder()
+mac_sender_ubeac()
